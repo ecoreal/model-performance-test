@@ -1,0 +1,21 @@
+# 忽略生成的HTML文件（可选）
+# outputs/**/*.html
+
+# 忽略元数据
+outputs/**/metadata.json
+
+# 备份文件
+*.bak
+*.tmp
+
+# macOS
+.DS_Store
+
+# Linux
+*~
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo

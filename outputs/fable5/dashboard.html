@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人生产力仪表板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode {
+            --card-bg: rgba(31, 41, 55, 0.95);
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --border: #374151;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 20px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .theme-toggle {
+            background: var(--card-bg);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px var(--shadow);
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--shadow);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 48px var(--shadow);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 番茄钟样式 */
+        .pomodoro-timer {
+            text-align: center;
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 30px 0;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-mode {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .timer-mode.work {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .timer-mode.break {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .progress-ring {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 20px auto;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-circle {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 8;
+        }
+
+        .progress-ring-progress {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+
+        .timer-settings {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .timer-setting {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .timer-setting label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .timer-setting input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1rem;
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        /* 任务列表样式 */
+        .todo-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .todo-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease;
+        }
+
+        .todo-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .todo-stats {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .todo-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .todo-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .todo-list::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .todo-list::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            animation: slideInLeft 0.3s ease;
+        }
+
+        @keyframes slideInLeft {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .todo-item:hover {
+            transform: translateX(5px);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .todo-item.completed {
+            opacity: 0.6;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+        }
+
+        .todo-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--success);
+        }
+
+        .todo-text {
+            flex: 1;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .todo-delete {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--danger);
+            transition: transform 0.2s ease;
+            padding: 5px;
+        }
+
+        .todo-delete:hover {
+            transform: scale(1.2);
+        }
+
+        /* 习惯追踪器样式 */
+        .habit-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .habit-day {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            background: var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 8px;
+        }
+
+        .habit-day:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .habit-day.checked {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+
+        .habit-day.today {
+            border: 3px solid var(--primary);
+        }
+
+        .habit-day-name {
+            font-size: 0.7rem;
+            margin-bottom: 4px;
+        }
+
+        .habit-day-date {
+            font-size: 0.8rem;
+        }
+
+        .habit-stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .habit-stat {
+            text-align: center;
+        }
+
+        .habit-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .habit-stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* 励志名言样式 */
+        .quote-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .quote-text {
+            font-size: 1.3rem;
+            font-style: italic;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quote-author {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .quote-refresh {
+            margin-top: 20px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .timer-display {
+                font-size: 3rem;
+            }
+
+            .progress-ring {
+                width: 220px;
+                height: 220px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .btn {
+                padding: 10px 18px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 375px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .timer-display {
+                font-size: 2.5rem;
+            }
+
+            .progress-ring {
+                width: 180px;
+                height: 180px;
+            }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        /* 淡入淡出动画 */
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🎯 个人生产力仪表板</h1>
+            <div class="header-controls">
+                <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+                    <span id="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 仪表板网格 -->
+        <div class="dashboard-grid">
+            <!-- 番茄钟计时器 -->
+            <div class="card">
+                <div class="card-title">
+                    <span>🍅</span>
+                    <span>番茄钟</span>
+                </div>
+                <div class="pomodoro-timer">
+                    <div class="timer-mode work" id="timer-mode">工作模式</div>
+
+                    <div class="progress-ring">
+                        <svg width="280" height="280">
+                            <circle class="progress-ring-circle" cx="140" cy="140" r="130"></circle>
+                            <circle class="progress-ring-progress" id="progress-circle" cx="140" cy="140" r="130"></circle>
+                        </svg>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                            <div class="timer-display" id="timer-display">25:00</div>
+                        </div>
+                    </div>
+
+                    <div class="timer-controls">
+                        <button class="btn btn-success" onclick="startTimer()" id="start-btn">▶️ 开始</button>
+                        <button class="btn btn-secondary" onclick="pauseTimer()" id="pause-btn" style="display:none;">⏸️ 暂停</button>
+                        <button class="btn btn-danger" onclick="resetTimer()">🔄 重置</button>
+                    </div>
+
+                    <div class="timer-settings">
+                        <div class="timer-setting">
+                            <label>工作时长 (分钟)</label>
+                            <input type="number" id="work-duration" value="25" min="1" max="60" onchange="updateTimerSettings()">
+                        </div>
+                        <div class="timer-setting">
+                            <label>休息时长 (分钟)</label>
+                            <input type="number" id="break-duration" value="5" min="1" max="30" onchange="updateTimerSettings()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 每日任务列表 -->
+            <div class="card">
+                <div class="card-title">
+                    <span>✅</span>
+                    <span>每日任务</span>
+                </div>
+
+                <div class="todo-input-container">
+                    <input type="text" class="todo-input" id="todo-input" placeholder="添加新任务... (按回车快速添加)" onkeypress="handleTodoKeyPress(event)">
+                    <button class="btn btn-primary" onclick="addTodo()">➕</button>
+                </div>
+
+                <div class="todo-stats">
+                    <div>📝 总任务: <strong id="total-tasks">0</strong></div>
+                    <div>✔️ 已完成: <strong id="completed-tasks">0</strong></div>
+                </div>
+
+                <div class="todo-list" id="todo-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div>暂无任务，添加一个开始吧！</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 习惯追踪器 -->
+            <div class="card">
+                <div class="card-title">
+                    <span>🔥</span>
+                    <span>习惯打卡</span>
+                </div>
+
+                <div class="habit-stats">
+                    <div class="habit-stat">
+                        <div class="habit-stat-value" id="streak-days">0</div>
+                        <div class="habit-stat-label">连续打卡</div>
+                    </div>
+                    <div class="habit-stat">
+                        <div class="habit-stat-value" id="total-checks">0</div>
+                        <div class="habit-stat-label">本周打卡</div>
+                    </div>
+                </div>
+
+                <div class="habit-grid" id="habit-grid">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <!-- 励志名言 -->
+            <div class="card">
+                <div class="card-title">
+                    <span>💡</span>
+                    <span>每日名言</span>
+                </div>
+
+                <div class="quote-container">
+                    <div class="quote-text" id="quote-text">
+                        "成功不是终点，失败也不是致命的，重要的是继续前进的勇气。"
+                    </div>
+                    <div class="quote-author" id="quote-author">—— 温斯顿·丘吉尔</div>
+                    <button class="btn btn-primary quote-refresh" onclick="refreshQuote()">🔄 换一条</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 音频提示 (使用Web Audio API生成提示音)
+        function playNotificationSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        // ==================== 番茄钟功能 ====================
+        let timerInterval = null;
+        let timeRemaining = 25 * 60; // 秒
+        let isWorkMode = true;
+        let isRunning = false;
+        let totalSeconds = 25 * 60;
+
+        const progressCircle = document.getElementById('progress-circle');
+        const radius = 130;
+        const circumference = 2 * Math.PI * radius;
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressCircle.style.strokeDashoffset = 0;
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            document.getElementById('timer-display').textContent =
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            // 更新进度环
+            const progress = 1 - (timeRemaining / totalSeconds);
+            const offset = circumference * progress;
+            progressCircle.style.strokeDashoffset = offset;
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true;
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('pause-btn').style.display = 'inline-block';
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    playNotificationSound();
+
+                    // 切换模式
+                    if (isWorkMode) {
+                        alert('🎉 工作时间结束！该休息一下了！');
+                        switchToBreakMode();
+                    } else {
+                        alert('✨ 休息结束！准备开始新的工作！');
+                        switchToWorkMode();
+                    }
+
+                    document.getElementById('start-btn').style.display = 'inline-block';
+                    document.getElementById('pause-btn').style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return;
+            clearInterval(timerInterval);
+            isRunning = false;
+            document.getElementById('start-btn').style.display = 'inline-block';
+            document.getElementById('pause-btn').style.display = 'none';
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            if (isWorkMode) {
+                timeRemaining = parseInt(document.getElementById('work-duration').value) * 60;
+                totalSeconds = timeRemaining;
+            } else {
+                timeRemaining = parseInt(document.getElementById('break-duration').value) * 60;
+                totalSeconds = timeRemaining;
+            }
+            updateTimerDisplay();
+            document.getElementById('start-btn').style.display = 'inline-block';
+            document.getElementById('pause-btn').style.display = 'none';
+        }
+
+        function switchToBreakMode() {
+            isWorkMode = false;
+            timeRemaining = parseInt(document.getElementById('break-duration').value) * 60;
+            totalSeconds = timeRemaining;
+            document.getElementById('timer-mode').textContent = '休息模式';
+            document.getElementById('timer-mode').className = 'timer-mode break';
+            progressCircle.style.stroke = '#10b981';
+            updateTimerDisplay();
+        }
+
+        function switchToWorkMode() {
+            isWorkMode = true;
+            timeRemaining = parseInt(document.getElementById('work-duration').value) * 60;
+            totalSeconds = timeRemaining;
+            document.getElementById('timer-mode').textContent = '工作模式';
+            document.getElementById('timer-mode').className = 'timer-mode work';
+            progressCircle.style.stroke = '#6366f1';
+            updateTimerDisplay();
+        }
+
+        function updateTimerSettings() {
+            if (!isRunning) {
+                resetTimer();
+            }
+        }
+
+        // ==================== 任务列表功能 ====================
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        function renderTodos() {
+            const todoList = document.getElementById('todo-list');
+            const totalTasks = todos.length;
+            const completedTasks = todos.filter(t => t.completed).length;
+
+            document.getElementById('total-tasks').textContent = totalTasks;
+            document.getElementById('completed-tasks').textContent = completedTasks;
+
+            if (totalTasks === 0) {
+                todoList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div>暂无任务，添加一个开始吧！</div>
+                    </div>
+                `;
+                return;
+            }
+
+            todoList.innerHTML = todos.map((todo, index) => `
+                <div class="todo-item ${todo.completed ? 'completed' : ''}">
+                    <input type="checkbox" class="todo-checkbox"
+                           ${todo.completed ? 'checked' : ''}
+                           onchange="toggleTodo(${index})">
+                    <span class="todo-text">${todo.text}</span>
+                    <button class="todo-delete" onclick="deleteTodo(${index})">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function addTodo() {
+            const input = document.getElementById('todo-input');
+            const text = input.value.trim();
+
+            if (text === '') {
+                alert('请输入任务内容！');
+                return;
+            }
+
+            todos.push({
+                text: text,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+
+            input.value = '';
+            saveTodos();
+            renderTodos();
+        }
+
+        function toggleTodo(index) {
+            todos[index].completed = !todos[index].completed;
+            saveTodos();
+            renderTodos();
+        }
+
+        function deleteTodo(index) {
+            todos.splice(index, 1);
+            saveTodos();
+            renderTodos();
+        }
+
+        function handleTodoKeyPress(event) {
+            if (event.key === 'Enter') {
+                addTodo();
+            }
+        }
+
+        // ==================== 习惯追踪器功能 ====================
+        let habitChecks = JSON.parse(localStorage.getItem('habitChecks')) || {};
+
+        function saveHabitChecks() {
+            localStorage.setItem('habitChecks', JSON.stringify(habitChecks));
+        }
+
+        function getDateString(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function renderHabitTracker() {
+            const habitGrid = document.getElementById('habit-grid');
+            const today = new Date();
+            const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+            let html = '';
+
+            // 生成最近7天
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = getDateString(date);
+                const isChecked = habitChecks[dateStr] || false;
+                const isToday = i === 0;
+
+                html += `
+                    <div class="habit-day ${isChecked ? 'checked' : ''} ${isToday ? 'today' : ''}"
+                         onclick="toggleHabit('${dateStr}')">
+                        <div class="habit-day-name">周${dayNames[date.getDay()]}</div>
+                        <div class="habit-day-date">${date.getDate()}</div>
+                        ${isChecked ? '<div style="font-size: 1.2rem;">✓</div>' : ''}
+                    </div>
+                `;
+            }
+
+            habitGrid.innerHTML = html;
+            updateHabitStats();
+        }
+
+        function toggleHabit(dateStr) {
+            habitChecks[dateStr] = !habitChecks[dateStr];
+            saveHabitChecks();
+            renderHabitTracker();
+        }
+
+        function updateHabitStats() {
+            // 计算连续打卡天数
+            let streak = 0;
+            const today = new Date();
+
+            for (let i = 0; i < 365; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = getDateString(date);
+
+                if (habitChecks[dateStr]) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+
+            // 计算本周打卡数
+            let weekChecks = 0;
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = getDateString(date);
+                if (habitChecks[dateStr]) weekChecks++;
+            }
+
+            document.getElementById('streak-days').textContent = streak;
+            document.getElementById('total-checks').textContent = weekChecks;
+        }
+
+        // ==================== 励志名言功能 ====================
+        const quotes = [
+            { text: "成功不是终点，失败也不是致命的，重要的是继续前进的勇气。", author: "温斯顿·丘吉尔" },
+            { text: "不要等待机会，而要创造机会。", author: "乔治·肖伯纳" },
+            { text: "你今天的努力，是幸运的伏笔。", author: "佚名" },
+            { text: "成功就是从失败到失败，也依然不改热情。", author: "温斯顿·丘吉尔" },
+            { text: "行动是治愈恐惧的良药，而犹豫、拖延将不断滋养恐惧。", author: "佚名" },
+            { text: "你不能改变过去，但你可以改变未来。", author: "佚名" },
+            { text: "每一个不曾起舞的日子，都是对生命的辜负。", author: "尼采" },
+            { text: "成功的秘诀在于坚持自己的目标和信念。", author: "本杰明·迪斯雷利" },
+            { text: "只有不断找寻机会的人才会及时把握机会。", author: "佚名" },
+            { text: "永远不要低估你改变自我的能力。", author: "H·杰克逊·布朗" },
+            { text: "世上无难事，只要肯攀登。", author: "毛泽东" },
+            { text: "一个今天胜过两个明天。", author: "本杰明·富兰克林" },
+            { text: "生活不是等待暴风雨过去，而是学会在雨中起舞。", author: "佚名" },
+            { text: "你的时间有限，不要浪费在重复别人的生活上。", author: "史蒂夫·乔布斯" },
+            { text: "专注于你想要的，而不是你恐惧的。", author: "佚名" }
+        ];
+
+        let currentQuoteIndex = 0;
+
+        function refreshQuote() {
+            currentQuoteIndex = Math.floor(Math.random() * quotes.length);
+            const quote = quotes[currentQuoteIndex];
+            document.getElementById('quote-text').textContent = `"${quote.text}"`;
+            document.getElementById('quote-author').textContent = `—— ${quote.author}`;
+        }
+
+        // ==================== 主题切换功能 ====================
+        function toggleTheme() {
+            const body = document.body;
+            const isDark = body.classList.toggle('dark-mode');
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.textContent = isDark ? '☀️' : '🌙';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        // ==================== 初始化 ====================
+        function init() {
+            // 加载主题
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('theme-icon').textContent = '☀️';
+            }
+
+            // 初始化各个模块
+            updateTimerDisplay();
+            renderTodos();
+            renderHabitTracker();
+            refreshQuote();
+
+            // 键盘快捷键支持
+            document.addEventListener('keydown', (e) => {
+                // N键: 聚焦到任务输入框
+                if (e.key === 'n' || e.key === 'N') {
+                    if (document.activeElement.tagName !== 'INPUT') {
+                        document.getElementById('todo-input').focus();
+                        e.preventDefault();
+                    }
+                }
+                // Space: 开始/暂停番茄钟
+                if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+                    if (isRunning) {
+                        pauseTimer();
+                    } else {
+                        startTimer();
+                    }
+                    e.preventDefault();
+                }
+            });
+
+            console.log('🎯 个人生产力仪表板已加载');
+            console.log('💡 提示：按 N 键快速添加任务，按 Space 开始/暂停番茄钟');
+        }
+
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
+

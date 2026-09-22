@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人生产力仪表板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-light: #f8fafc;
+            --bg-dark: #0f172a;
+            --card-light: #ffffff;
+            --card-dark: #1e293b;
+            --text-light: #1e293b;
+            --text-dark: #f1f5f9;
+            --border-light: #e2e8f0;
+            --border-dark: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        body.dark-theme {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 头部样式 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* 卡片通用样式 */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        body.dark-theme .card {
+            background: rgba(30, 41, 59, 0.95);
+            color: var(--text-dark);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 网格布局 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* 番茄钟样式 */
+        .pomodoro {
+            text-align: center;
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 30px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        body.dark-theme .timer-display {
+            color: var(--primary);
+        }
+
+        .timer-mode {
+            font-size: 1.2rem;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .progress-ring {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.5s ease;
+            stroke: var(--primary);
+            stroke-width: 8;
+            fill: none;
+        }
+
+        .progress-ring-bg {
+            stroke: #e2e8f0;
+            stroke-width: 8;
+            fill: none;
+        }
+
+        body.dark-theme .progress-ring-bg {
+            stroke: #334155;
+        }
+
+        .timer-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .timer-settings {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .timer-settings input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        body.dark-theme .timer-settings input {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        /* 任务列表样式 */
+        .task-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .task-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border-light);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .task-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        body.dark-theme .task-input {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: var(--bg-light);
+            transition: all 0.3s ease;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        body.dark-theme .task-item {
+            background: var(--bg-dark);
+        }
+
+        .task-item:hover {
+            background: #e2e8f0;
+        }
+
+        body.dark-theme .task-item:hover {
+            background: #334155;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--success);
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 1rem;
+        }
+
+        .task-delete {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        .task-delete:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .task-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 10px;
+        }
+
+        body.dark-theme .task-stats {
+            background: var(--bg-dark);
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        /* 习惯追踪样式 */
+        .habit-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .habit-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border-light);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 8px;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        body.dark-theme .habit-day {
+            border-color: var(--border-dark);
+        }
+
+        .habit-day:hover {
+            transform: scale(1.05);
+            border-color: var(--primary);
+        }
+
+        .habit-day.checked {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .habit-day.today {
+            border-color: var(--primary);
+            border-width: 3px;
+        }
+
+        .day-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .day-date {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .habit-stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 10px;
+        }
+
+        body.dark-theme .habit-stats {
+            background: var(--bg-dark);
+        }
+
+        /* 名言样式 */
+        .quote-container {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .quote-text {
+            font-size: 1.3rem;
+            font-style: italic;
+            color: #475569;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        body.dark-theme .quote-text {
+            color: #cbd5e1;
+        }
+
+        .quote-author {
+            font-size: 1rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .quote-refresh {
+            margin-top: 20px;
+            background: var(--secondary);
+            color: white;
+        }
+
+        .quote-refresh:hover {
+            background: #7c3aed;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .timer-display {
+                font-size: 3rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .habit-grid {
+                gap: 8px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .quote-text {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 375px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .timer-display {
+                font-size: 2.5rem;
+            }
+
+            .habit-grid {
+                gap: 5px;
+            }
+
+            .day-name {
+                font-size: 0.65rem;
+            }
+
+            .day-date {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.5s ease;
+            z-index: 1000;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🚀 个人生产力仪表板</h1>
+            <p>专注当下，高效每一天</p>
+            <div class="header-controls">
+                <button class="theme-toggle" onclick="toggleTheme()">🌓 切换主题</button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="grid">
+            <!-- 番茄钟 -->
+            <div class="card">
+                <div class="card-title">🍅 番茄钟</div>
+                <div class="pomodoro">
+                    <div class="timer-mode" id="timerMode">工作模式</div>
+                    <div class="progress-ring">
+                        <svg width="200" height="200">
+                            <circle class="progress-ring-bg" cx="100" cy="100" r="90"></circle>
+                            <circle class="progress-ring-circle" id="progressCircle" cx="100" cy="100" r="90"
+                                stroke-dasharray="565.48" stroke-dashoffset="0"></circle>
+                        </svg>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                            <div class="timer-display" id="timerDisplay">25:00</div>
+                        </div>
+                    </div>
+                    <div class="timer-buttons">
+                        <button class="btn btn-primary" onclick="toggleTimer()">▶️ 开始</button>
+                        <button class="btn btn-secondary" onclick="resetTimer()">🔄 重置</button>
+                    </div>
+                    <div class="timer-settings">
+                        <div>
+                            <label>工作时长(分)</label>
+                            <input type="number" id="workDuration" value="25" min="1" max="60">
+                        </div>
+                        <div>
+                            <label>休息时长(分)</label>
+                            <input type="number" id="breakDuration" value="5" min="1" max="30">
+                        </div>
+                    </div>
+                    <div class="task-stats" style="margin-top: 20px;">
+                        <div class="stat">
+                            <div class="stat-value" id="pomodoroCount">0</div>
+                            <div class="stat-label">完成次数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 每日任务 -->
+            <div class="card">
+                <div class="card-title">✅ 每日任务</div>
+                <div class="task-input-container">
+                    <input type="text" class="task-input" id="taskInput" placeholder="输入新任务，按回车添加...">
+                    <button class="btn btn-primary" onclick="addTask()">➕</button>
+                </div>
+                <ul class="task-list" id="taskList"></ul>
+                <div class="task-stats">
+                    <div class="stat">
+                        <div class="stat-value" id="totalTasks">0</div>
+                        <div class="stat-label">总任务</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="completedTasks">0</div>
+                        <div class="stat-label">已完成</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="completionRate">0%</div>
+                        <div class="stat-label">完成率</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第二行 -->
+        <div class="grid">
+            <!-- 习惯追踪 -->
+            <div class="card">
+                <div class="card-title">📅 习惯追踪（最近7天）</div>
+                <div class="habit-grid" id="habitGrid"></div>
+                <div class="habit-stats">
+                    <div class="stat">
+                        <div class="stat-value" id="streakDays">0</div>
+                        <div class="stat-label">连续打卡</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="totalChecked">0</div>
+                        <div class="stat-label">本周完成</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 励志名言 -->
+            <div class="card">
+                <div class="card-title">💡 每日励志</div>
+                <div class="quote-container">
+                    <div class="quote-text" id="quoteText"></div>
+                    <div class="quote-author" id="quoteAuthor"></div>
+                    <button class="btn quote-refresh" onclick="refreshQuote()">🔄 换一条</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 全局变量 ==========
+        let timerInterval = null;
+        let isRunning = false;
+        let isWorkMode = true;
+        let remainingSeconds = 25 * 60;
+        let totalSeconds = 25 * 60;
+
+        // 励志名言库
+        const quotes = [
+            { text: "成功是日复一日微小努力的积累。", author: "罗伯特·科利尔" },
+            { text: "你不能改变过去，但你可以改变现在。", author: "佚名" },
+            { text: "行动是治愈恐惧的良药。", author: "威廉·詹姆斯" },
+            { text: "成功的秘诀在于坚持自己的目标和信念。", author: "本杰明·迪斯雷利" },
+            { text: "每一次的失败，都是成功的伏笔。", author: "托马斯·爱迪生" },
+            { text: "专注是效率之母。", author: "佚名" },
+            { text: "小步快跑，持续迭代。", author: "佚名" },
+            { text: "今天的你，要比昨天更优秀一点点。", author: "佚名" },
+            { text: "时间管理的本质是自我管理。", author: "彼得·德鲁克" },
+            { text: "不要等待机会，而要创造机会。", author: "乔治·伯纳德·肖" },
+            { text: "成功不是终点，失败也不是终结，唯有勇气永存。", author: "温斯顿·丘吉尔" },
+            { text: "你的时间有限，不要浪费在别人的生活中。", author: "史蒂夫·乔布斯" }
+        ];
+
+        // ========== 主题切换 ==========
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+
+        // 加载主题
+        function loadTheme() {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                document.body.classList.add('dark-theme');
+            }
+        }
+
+        // ========== 番茄钟功能 ==========
+        function updateTimerDisplay() {
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            document.getElementById('timerDisplay').textContent =
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            // 更新进度环
+            const progress = (totalSeconds - remainingSeconds) / totalSeconds;
+            const circumference = 2 * Math.PI * 90;
+            const offset = circumference * (1 - progress);
+            document.getElementById('progressCircle').style.strokeDashoffset = offset;
+        }
+
+        function toggleTimer() {
+            const btn = event.target;
+            if (isRunning) {
+                // 暂停
+                clearInterval(timerInterval);
+                isRunning = false;
+                btn.textContent = '▶️ 开始';
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-primary');
+            } else {
+                // 开始
+                isRunning = true;
+                btn.textContent = '⏸️ 暂停';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-secondary');
+
+                timerInterval = setInterval(() => {
+                    remainingSeconds--;
+                    updateTimerDisplay();
+
+                    if (remainingSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        isRunning = false;
+                        btn.textContent = '▶️ 开始';
+                        btn.classList.remove('btn-secondary');
+                        btn.classList.add('btn-primary');
+
+                        // 计时结束通知
+                        showNotification(isWorkMode ? '工作时间结束！休息一下吧 🎉' : '休息结束！继续加油 💪');
+                        playSound();
+
+                        // 切换模式
+                        if (isWorkMode) {
+                            // 工作结束，增加完成次数
+                            const count = parseInt(localStorage.getItem('pomodoroCount') || '0') + 1;
+                            localStorage.setItem('pomodoroCount', count);
+                            document.getElementById('pomodoroCount').textContent = count;
+                        }
+
+                        isWorkMode = !isWorkMode;
+                        const mode = isWorkMode ? '工作模式' : '休息模式';
+                        document.getElementById('timerMode').textContent = mode;
+
+                        // 重置计时器
+                        const duration = isWorkMode ?
+                            parseInt(document.getElementById('workDuration').value) :
+                            parseInt(document.getElementById('breakDuration').value);
+                        remainingSeconds = duration * 60;
+                        totalSeconds = duration * 60;
+                        updateTimerDisplay();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            isWorkMode = true;
+            const workDuration = parseInt(document.getElementById('workDuration').value);
+            remainingSeconds = workDuration * 60;
+            totalSeconds = workDuration * 60;
+            updateTimerDisplay();
+            document.getElementById('timerMode').textContent = '工作模式';
+            const btn = document.querySelector('.timer-buttons .btn-primary, .timer-buttons .btn-secondary');
+            btn.textContent = '▶️ 开始';
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+        }
+
+        // 显示通知
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // 播放提示音
+        function playSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        // ========== 任务列表功能 ==========
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderTasks();
+            updateTaskStats();
+        }
+
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const text = input.value.trim();
+
+            if (text === '') {
+                return;
+            }
+
+            tasks.push({
+                id: Date.now(),
+                text: text,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+
+            input.value = '';
+            saveTasks();
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                saveTasks();
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = `task-item ${task.completed ? 'completed' : ''}`;
+
+                li.innerHTML = `
+                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}
+                        onchange="toggleTask(${task.id})">
+                    <span class="task-text">${task.text}</span>
+                    <button class="task-delete" onclick="deleteTask(${task.id})">🗑️</button>
+                `;
+
+                taskList.appendChild(li);
+            });
+        }
+
+        function updateTaskStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('totalTasks').textContent = total;
+            document.getElementById('completedTasks').textContent = completed;
+            document.getElementById('completionRate').textContent = rate + '%';
+        }
+
+        // 回车键添加任务
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('taskInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addTask();
+                }
+            });
+        });
+
+        // ========== 习惯追踪功能 ==========
+        function getDateKey(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function getLast7Days() {
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                days.push(date);
+            }
+            return days;
+        }
+
+        function getHabitData() {
+            return JSON.parse(localStorage.getItem('habitData')) || {};
+        }
+
+        function saveHabitData(data) {
+            localStorage.setItem('habitData', JSON.stringify(data));
+        }
+
+        function toggleHabit(dateKey) {
+            const habitData = getHabitData();
+            habitData[dateKey] = !habitData[dateKey];
+            saveHabitData(habitData);
+            renderHabits();
+            updateHabitStats();
+        }
+
+        function renderHabits() {
+            const habitGrid = document.getElementById('habitGrid');
+            habitGrid.innerHTML = '';
+
+            const days = getLast7Days();
+            const habitData = getHabitData();
+            const today = getDateKey(new Date());
+
+            const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+
+            days.forEach(date => {
+                const dateKey = getDateKey(date);
+                const isChecked = habitData[dateKey] || false;
+                const isToday = dateKey === today;
+
+                const dayDiv = document.createElement('div');
+                dayDiv.className = `habit-day ${isChecked ? 'checked' : ''} ${isToday ? 'today' : ''}`;
+                dayDiv.onclick = () => toggleHabit(dateKey);
+
+                dayDiv.innerHTML = `
+                    <div class="day-name">${dayNames[date.getDay()]}</div>
+                    <div class="day-date">${date.getDate()}</div>
+                `;
+
+                habitGrid.appendChild(dayDiv);
+            });
+        }
+
+        function updateHabitStats() {
+            const habitData = getHabitData();
+            const days = getLast7Days();
+
+            // 计算本周完成天数
+            let totalChecked = 0;
+            days.forEach(date => {
+                if (habitData[getDateKey(date)]) {
+                    totalChecked++;
+                }
+            });
+
+            // 计算连续打卡天数（从今天往回算）
+            let streakDays = 0;
+            let currentDate = new Date();
+            while (habitData[getDateKey(currentDate)]) {
+                streakDays++;
+                currentDate.setDate(currentDate.getDate() - 1);
+            }
+
+            document.getElementById('streakDays').textContent = streakDays;
+            document.getElementById('totalChecked').textContent = totalChecked;
+        }
+
+        // ========== 励志名言功能 ==========
+        function getRandomQuote() {
+            return quotes[Math.floor(Math.random() * quotes.length)];
+        }
+
+        function displayQuote(quote) {
+            document.getElementById('quoteText').textContent = `"${quote.text}"`;
+            document.getElementById('quoteAuthor').textContent = `—— ${quote.author}`;
+        }
+
+        function refreshQuote() {
+            const quote = getRandomQuote();
+            displayQuote(quote);
+        }
+
+        // ========== 初始化 ==========
+        function init() {
+            // 加载主题
+            loadTheme();
+
+            // 加载番茄钟完成次数
+            const pomodoroCount = localStorage.getItem('pomodoroCount') || '0';
+            document.getElementById('pomodoroCount').textContent = pomodoroCount;
+
+            // 初始化番茄钟显示
+            updateTimerDisplay();
+
+            // 渲染任务列表
+            renderTasks();
+            updateTaskStats();
+
+            // 渲染习惯追踪
+            renderHabits();
+            updateHabitStats();
+
+            // 显示励志名言
+            refreshQuote();
+
+            // 监听时长设置变化
+            document.getElementById('workDuration').addEventListener('change', () => {
+                if (!isRunning && isWorkMode) {
+                    const duration = parseInt(document.getElementById('workDuration').value);
+                    remainingSeconds = duration * 60;
+                    totalSeconds = duration * 60;
+                    updateTimerDisplay();
+                }
+            });
+
+            document.getElementById('breakDuration').addEventListener('change', () => {
+                if (!isRunning && !isWorkMode) {
+                    const duration = parseInt(document.getElementById('breakDuration').value);
+                    remainingSeconds = duration * 60;
+                    totalSeconds = duration * 60;
+                    updateTimerDisplay();
+                }
+            });
+
+            // 键盘快捷键支持
+            document.addEventListener('keydown', (e) => {
+                // Space键暂停/开始（当焦点不在输入框时）
+                if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    toggleTimer();
+                }
+
+                // N键新建任务（当焦点不在输入框时）
+                if (e.code === 'KeyN' && e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    document.getElementById('taskInput').focus();
+                }
+            });
+        }
+
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

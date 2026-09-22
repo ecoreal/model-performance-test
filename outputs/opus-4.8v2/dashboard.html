@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人生产力仪表板</title>
+<style>
+/* ============================================================
+   主题变量：通过 data-theme 切换浅色 / 深色
+   ============================================================ */
+:root {
+    --bg-grad-1: #667eea;
+    --bg-grad-2: #764ba2;
+    --card-bg: rgba(255, 255, 255, 0.72);
+    --card-border: rgba(255, 255, 255, 0.5);
+    --text-main: #2d2d44;
+    --text-soft: #6b6b80;
+    --accent: #764ba2;
+    --accent-soft: #667eea;
+    --danger: #e25563;
+    --success: #2eb872;
+    --track: rgba(0, 0, 0, 0.08);
+    --shadow: 0 8px 32px rgba(31, 38, 135, 0.18);
+    --input-bg: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="dark"] {
+    --bg-grad-1: #1a1a2e;
+    --bg-grad-2: #16213e;
+    --card-bg: rgba(36, 40, 64, 0.72);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text-main: #e8e8f0;
+    --text-soft: #a0a0b8;
+    --accent: #9d7fea;
+    --accent-soft: #7b9cff;
+    --danger: #ff6b7a;
+    --success: #3ad88a;
+    --track: rgba(255, 255, 255, 0.1);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --input-bg: rgba(255, 255, 255, 0.06);
+}
+
+/* ============================================================
+   基础重置与全局样式
+   ============================================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-main);
+    background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2));
+    background-attachment: fixed;
+    min-height: 100vh;
+    line-height: 1.6;
+    transition: background 0.5s ease, color 0.3s ease;
+    overflow-x: hidden;
+}
+
+/* 动态波浪背景（装饰用） */
+.bg-decoration {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+.bg-decoration span {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    animation: float 18s infinite ease-in-out;
+}
+.bg-decoration span:nth-child(1) { width: 320px; height: 320px; top: -80px; left: -60px; }
+.bg-decoration span:nth-child(2) { width: 220px; height: 220px; bottom: 5%; right: -40px; animation-delay: -6s; }
+.bg-decoration span:nth-child(3) { width: 160px; height: 160px; top: 40%; left: 50%; animation-delay: -12s; }
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -40px) scale(1.1); }
+}
+
+/* ============================================================
+   布局
+   ============================================================ */
+.app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 28px;
+    animation: dropIn 0.6s ease both;
+}
+
+header h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* 卡片网格 */
+.grid {
+    display: grid;
+    gap: 22px;
+    grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+    .grid { grid-template-columns: 1.1fr 1fr; }
+    .card-pomodoro { grid-row: span 2; }
+}
+
+/* 玻璃拟态卡片 */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    animation: dropIn 0.6s ease both;
+}
+.card:nth-child(2) { animation-delay: 0.08s; }
+.card:nth-child(3) { animation-delay: 0.16s; }
+.card:nth-child(4) { animation-delay: 0.24s; }
+
+.card h2 {
+    font-size: 1.15rem;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@keyframes dropIn {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   通用按钮
+   ============================================================ */
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+    padding: 10px 18px;
+    min-height: 44px; /* 移动端触摸友好 */
+    font-weight: 600;
+}
+button:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2); }
+button:active { transform: translateY(0) scale(0.97); }
+button.ghost {
+    background: var(--input-bg);
+    color: var(--text-main);
+    border: 1px solid var(--card-border);
+}
+button.danger { background: linear-gradient(135deg, #ff8a8a, var(--danger)); }
+.icon-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+/* ============================================================
+   番茄钟
+   ============================================================ */
+.pomodoro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+.mode-badge {
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+.mode-work { background: rgba(118, 75, 162, 0.18); color: var(--accent); }
+.mode-break { background: rgba(46, 184, 114, 0.18); color: var(--success); }
+
+.ring-wrap { position: relative; width: 240px; height: 240px; max-width: 70vw; max-height: 70vw; }
+.ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--track); stroke-width: 14; }
+.ring-fg {
+    fill: none;
+    stroke: url(#ringGrad);
+    stroke-width: 14;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.4s linear;
+}
+.ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.time-display {
+    font-size: clamp(2.4rem, 12vw, 3.4rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+}
+.round-label { font-size: 0.85rem; color: var(--text-soft); }
+
+.pomo-controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+.pomo-settings {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+}
+.setting-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.setting-item label { font-size: 0.78rem; color: var(--text-soft); }
+.setting-item input {
+    width: 84px;
+    text-align: center;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-size: 1rem;
+}
+.pomo-stat {
+    font-size: 0.9rem;
+    color: var(--text-soft);
+}
+.pomo-stat strong { color: var(--accent); font-size: 1.1rem; }
+
+/* 计时结束闪烁提示 */
+@keyframes flashAlert {
+    0%, 100% { box-shadow: var(--shadow); }
+    50% { box-shadow: 0 0 0 6px rgba(118, 75, 162, 0.4), var(--shadow); }
+}
+.card.alert { animation: flashAlert 0.6s ease 3; }
+
+/* ============================================================
+   待办列表
+   ============================================================ */
+.todo-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.todo-input-row input[type="text"] {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-size: 1rem;
+    min-height: 44px;
+}
+.todo-input-row input:focus { outline: 2px solid var(--accent-soft); }
+.priority-select {
+    padding: 0 8px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    min-height: 44px;
+}
+
+.todo-stats {
+    font-size: 0.85rem;
+    color: var(--text-soft);
+    margin-bottom: 12px;
+}
+.todo-stats strong { color: var(--success); }
+
+ul.todo-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.todo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-left-width: 4px;
+    animation: itemIn 0.3s ease;
+}
+.todo-item.removing { animation: itemOut 0.3s ease forwards; }
+@keyframes itemIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes itemOut { to { opacity: 0; transform: translateX(20px); height: 0; padding: 0; margin: 0; } }
+
+.todo-item.p-high { border-left-color: var(--danger); }
+.todo-item.p-mid { border-left-color: #f5a623; }
+.todo-item.p-low { border-left-color: var(--success); }
+
+.todo-check {
+    width: 24px; height: 24px;
+    min-height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-soft);
+    background: transparent;
+    flex-shrink: 0;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 0.8rem;
+}
+.todo-item.done .todo-check { background: var(--success); border-color: var(--success); }
+.todo-text { flex: 1; word-break: break-word; }
+.todo-item.done .todo-text { text-decoration: line-through; color: var(--text-soft); }
+.todo-del {
+    background: transparent;
+    color: var(--danger);
+    padding: 0;
+    width: 36px; height: 36px; min-height: 36px;
+    font-size: 1.1rem;
+}
+.todo-del:hover { box-shadow: none; transform: scale(1.2); }
+.empty-hint { color: var(--text-soft); font-size: 0.9rem; text-align: center; padding: 16px 0; }
+
+/* ============================================================
+   习惯追踪器
+   ============================================================ */
+.habit-streak {
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+    color: var(--text-soft);
+}
+.habit-streak strong { color: #f5a623; font-size: 1.3rem; }
+
+.habit-days { display: flex; gap: 8px; justify-content: space-between; }
+.habit-day {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.habit-day .dow { font-size: 0.72rem; color: var(--text-soft); }
+.habit-cell {
+    width: 100%;
+    aspect-ratio: 1;
+    min-height: 44px;
+    border-radius: 12px;
+    border: 2px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--success);
+    font-size: 1.3rem;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+}
+.habit-cell.checked {
+    background: linear-gradient(135deg, #3ad88a, #2eb872);
+    border-color: transparent;
+    color: #fff;
+}
+.habit-cell.today { box-shadow: 0 0 0 2px var(--accent); }
+.habit-rate { margin-top: 16px; font-size: 0.85rem; color: var(--text-soft); }
+.rate-bar { height: 8px; border-radius: 4px; background: var(--track); margin-top: 6px; overflow: hidden; }
+.rate-fill { height: 100%; background: linear-gradient(90deg, var(--accent-soft), var(--accent)); transition: width 0.5s ease; }
+
+/* ============================================================
+   励志名言
+   ============================================================ */
+.quote-card { text-align: center; }
+.quote-text {
+    font-size: 1.15rem;
+    font-style: italic;
+    margin-bottom: 12px;
+    min-height: 3.2em;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.4s ease;
+}
+.quote-author { color: var(--text-soft); margin-bottom: 16px; font-size: 0.9rem; }
+.quote-fade { opacity: 0; }
+
+/* ============================================================
+   提示气泡 (toast)
+   ============================================================ */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--accent);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    font-size: 0.9rem;
+    z-index: 100;
+    opacity: 0;
+    transition: all 0.35s ease;
+    pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+footer {
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8rem;
+    margin-top: 32px;
+}
+footer kbd {
+    background: rgba(255,255,255,0.2);
+    padding: 1px 7px;
+    border-radius: 5px;
+    font-family: monospace;
+}
+</style>
+</head>
+<body>
+<!-- 动态装饰背景 -->
+<div class="bg-decoration"><span></span><span></span><span></span></div>
+
+<div class="app">
+    <header>
+        <h1>🚀 个人生产力仪表板</h1>
+        <div class="header-actions">
+            <button class="icon-btn ghost" id="exportBtn" title="导出数据为 JSON">💾</button>
+            <button class="icon-btn ghost" id="themeBtn" title="切换主题">🌙</button>
+        </div>
+    </header>
+
+    <div class="grid">
+        <!-- ============ 番茄钟 ============ -->
+        <section class="card card-pomodoro" id="pomoCard">
+            <h2>🍅 番茄钟</h2>
+            <div class="pomodoro">
+                <span class="mode-badge mode-work" id="modeBadge">工作模式</span>
+
+                <div class="ring-wrap">
+                    <svg viewBox="0 0 240 240">
+                        <defs>
+                            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#667eea"/>
+                                <stop offset="100%" stop-color="#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                        <circle class="ring-bg" cx="120" cy="120" r="105"/>
+                        <circle class="ring-fg" id="ringFg" cx="120" cy="120" r="105"/>
+                    </svg>
+                    <div class="ring-center">
+                        <div class="time-display" id="timeDisplay">25:00</div>
+                        <div class="round-label" id="roundLabel">准备开始</div>
+                    </div>
+                </div>
+
+                <div class="pomo-controls">
+                    <button id="startBtn">▶ 开始</button>
+                    <button id="resetBtn" class="ghost">⟲ 重置</button>
+                </div>
+
+                <div class="pomo-settings">
+                    <div class="setting-item">
+                        <label for="workInput">工作 (分钟)</label>
+                        <input type="number" id="workInput" min="1" max="120" value="25">
+                    </div>
+                    <div class="setting-item">
+                        <label for="breakInput">休息 (分钟)</label>
+                        <input type="number" id="breakInput" min="1" max="60" value="5">
+                    </div>
+                </div>
+
+                <div class="pomo-stat">今日已完成 <strong id="pomoCount">0</strong> 个番茄 🍅</div>
+            </div>
+        </section>
+
+        <!-- ============ 待办列表 ============ -->
+        <section class="card">
+            <h2>✅ 今日任务</h2>
+            <div class="todo-input-row">
+                <input type="text" id="todoInput" placeholder="添加新任务，回车确认..." maxlength="120">
+                <select class="priority-select" id="prioritySelect" title="优先级">
+                    <option value="high">🔴 高</option>
+                    <option value="mid" selected>🟡 中</option>
+                    <option value="low">🟢 低</option>
+                </select>
+                <button id="addTodoBtn" class="icon-btn">＋</button>
+            </div>
+            <div class="todo-stats">已完成 <strong id="doneCount">0</strong> / <span id="totalCount">0</span> 个任务</div>
+            <ul class="todo-list" id="todoList"></ul>
+            <p class="empty-hint" id="todoEmpty">还没有任务，添加一个开始吧 ✨</p>
+        </section>
+
+        <!-- ============ 习惯追踪器 ============ -->
+        <section class="card">
+            <h2>🔥 习惯打卡</h2>
+            <div class="habit-streak">连续打卡 <strong id="streakCount">0</strong> 天</div>
+            <div class="habit-days" id="habitDays"></div>
+            <div class="habit-rate">
+                近 7 天完成率 <span id="rateText">0%</span>
+                <div class="rate-bar"><div class="rate-fill" id="rateFill" style="width:0%"></div></div>
+            </div>
+        </section>
+
+        <!-- ============ 励志名言 ============ -->
+        <section class="card quote-card">
+            <h2>💡 每日一言</h2>
+            <div class="quote-text" id="quoteText">加载中...</div>
+            <div class="quote-author" id="quoteAuthor"></div>
+            <button id="newQuoteBtn" class="ghost">🔄 换一条</button>
+        </section>
+    </div>
+
+    <footer>
+        快捷键：<kbd>N</kbd> 新建任务 · <kbd>Space</kbd> 开始/暂停番茄钟 · <kbd>T</kbd> 切换主题
+    </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   工具函数：localStorage 读写 + Toast 提示
+   ============================================================ */
+const Store = {
+    get(key, fallback) {
+        try {
+            const v = localStorage.getItem(key);
+            return v === null ? fallback : JSON.parse(v);
+        } catch (e) { return fallback; }
+    },
+    set(key, val) {
+        try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    }
+};
+
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
+}
+
+// 返回 YYYY-MM-DD 格式的日期键
+function dateKey(d) {
+    return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+}
+
+/* ============================================================
+   主题切换（浅色 / 深色）
+   ============================================================ */
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    Store.set('pd_theme', theme);
+}
+themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
+// 初始化主题：优先读取存储，否则跟随系统偏好
+applyTheme(Store.get('pd_theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+/* ============================================================
+   声音提示（Web Audio API，无需外部音频文件）
+   ============================================================ */
+function playBeep() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // 连续两声短鸣
+        [0, 0.25].forEach(offset => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = 880;
+            const t = ctx.currentTime + offset;
+            gain.gain.setValueAtTime(0.001, t);
+            gain.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            osc.start(t);
+            osc.stop(t + 0.22);
+        });
+    } catch (e) { /* 部分浏览器需用户交互后才能播放，忽略错误 */ }
+}
+
+/* ============================================================
+   番茄钟模块
+   ============================================================ */
+const Pomodoro = (() => {
+    const ringFg = document.getElementById('ringFg');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const roundLabel = document.getElementById('roundLabel');
+    const modeBadge = document.getElementById('modeBadge');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const workInput = document.getElementById('workInput');
+    const breakInput = document.getElementById('breakInput');
+    const pomoCountEl = document.getElementById('pomoCount');
+    const pomoCard = document.getElementById('pomoCard');
+
+    const RADIUS = 105;
+    const CIRC = 2 * Math.PI * RADIUS;
+    ringFg.style.strokeDasharray = CIRC;
+    ringFg.style.strokeDashoffset = 0;
+
+    let isWork = true;       // 当前是否为工作模式
+    let running = false;     // 是否计时中
+    let remaining = 25 * 60; // 剩余秒数
+    let total = 25 * 60;     // 本轮总秒数
+    let timer = null;
+
+    // 读取设置与今日番茄数
+    function loadSettings() {
+        const s = Store.get('pd_pomo_settings', { work: 25, brk: 5 });
+        workInput.value = s.work;
+        breakInput.value = s.brk;
+    }
+    function saveSettings() {
+        Store.set('pd_pomo_settings', {
+            work: clampInt(workInput.value, 1, 120, 25),
+            brk: clampInt(breakInput.value, 1, 60, 5)
+        });
+    }
+    function clampInt(v, min, max, def) {
+        v = parseInt(v, 10);
+        if (isNaN(v)) return def;
+        return Math.min(max, Math.max(min, v));
+    }
+
+    function loadCount() {
+        const rec = Store.get('pd_pomo_count', { date: '', count: 0 });
+        const today = dateKey(new Date());
+        if (rec.date !== today) { rec.date = today; rec.count = 0; Store.set('pd_pomo_count', rec); }
+        pomoCountEl.textContent = rec.count;
+    }
+    function bumpCount() {
+        const today = dateKey(new Date());
+        const rec = Store.get('pd_pomo_count', { date: today, count: 0 });
+        if (rec.date !== today) { rec.date = today; rec.count = 0; }
+        rec.count++;
+        Store.set('pd_pomo_count', rec);
+        pomoCountEl.textContent = rec.count;
+    }
+
+    // 更新显示（时间文字 + 进度环）
+    function render() {
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+        timeDisplay.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        document.title = (running ? (isWork ? '🍅 ' : '☕ ') : '') +
+            timeDisplay.textContent + ' · 生产力仪表板';
+        const progress = total > 0 ? remaining / total : 0;
+        ringFg.style.strokeDashoffset = CIRC * (1 - progress);
+    }
+
+    function setMode(work) {
+        isWork = work;
+        modeBadge.textContent = work ? '工作模式' : '休息模式';
+        modeBadge.className = 'mode-badge ' + (work ? 'mode-work' : 'mode-break');
+        roundLabel.textContent = work ? '专注工作' : '放松一下';
+    }
+
+    // 重置到当前模式起点
+    function reset(silent) {
+        pause();
+        const mins = isWork ? clampInt(workInput.value, 1, 120, 25) : clampInt(breakInput.value, 1, 60, 5);
+        total = remaining = mins * 60;
+        render();
+        if (!silent) roundLabel.textContent = '准备开始';
+    }
+
+    function tick() {
+        remaining--;
+        if (remaining <= 0) {
+            remaining = 0;
+            render();
+            finishRound();
+            return;
+        }
+        render();
+    }
+
+    // 一轮结束：提示 + 自动切换模式
+    function finishRound() {
+        pause();
+        playBeep();
+        pomoCard.classList.remove('alert');
+        void pomoCard.offsetWidth; // 触发重绘以重启动画
+        pomoCard.classList.add('alert');
+
+        if (isWork) {
+            bumpCount();
+            toast('🍅 工作完成！开始休息一下');
+            setMode(false);
+        } else {
+            toast('☕ 休息结束！继续加油');
+            setMode(true);
+        }
+        reset(true);
+    }
+
+    function start() {
+        if (running) return;
+        // 若处于初始满格状态，则按当前输入重置一次
+        if (remaining === 0) reset(true);
+        saveSettings();
+        running = true;
+        startBtn.textContent = '⏸ 暂停';
+        roundLabel.textContent = isWork ? '专注工作' : '放松一下';
+        timer = setInterval(tick, 1000);
+    }
+    function pause() {
+        running = false;
+        startBtn.textContent = '▶ 开始';
+        clearInterval(timer);
+        document.title = '个人生产力仪表板';
+    }
+    function toggle() { running ? pause() : start(); }
+
+    // 事件绑定
+    startBtn.addEventListener('click', toggle);
+    resetBtn.addEventListener('click', () => reset(false));
+    workInput.addEventListener('change', () => { saveSettings(); if (isWork && !running) reset(false); });
+    breakInput.addEventListener('change', () => { saveSettings(); if (!isWork && !running) reset(false); });
+
+    // 初始化
+    loadSettings();
+    loadCount();
+    setMode(true);
+    reset(true);
+    roundLabel.textContent = '准备开始';
+
+    return { toggle };
+})();
+
+/* ============================================================
+   待办列表模块
+   ============================================================ */
+const Todo = (() => {
+    const input = document.getElementById('todoInput');
+    const prioritySelect = document.getElementById('prioritySelect');
+    const addBtn = document.getElementById('addTodoBtn');
+    const listEl = document.getElementById('todoList');
+    const doneCountEl = document.getElementById('doneCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const emptyHint = document.getElementById('todoEmpty');
+
+    let tasks = Store.get('pd_todos', []); // {id, text, done, priority}
+
+    function save() { Store.set('pd_todos', tasks); }
+
+    function updateStats() {
+        const done = tasks.filter(t => t.done).length;
+        doneCountEl.textContent = done;
+        totalCountEl.textContent = tasks.length;
+        emptyHint.style.display = tasks.length ? 'none' : 'block';
+    }
+
+    function render() {
+        listEl.innerHTML = '';
+        // 优先级排序：未完成在前，高优先级在前
+        const order = { high: 0, mid: 1, low: 2 };
+        const sorted = [...tasks].sort((a, b) =>
+            (a.done - b.done) || (order[a.priority] - order[b.priority]));
+
+        sorted.forEach(task => {
+            const li = document.createElement('li');
+            li.className = 'todo-item p-' + task.priority + (task.done ? ' done' : '');
+            li.dataset.id = task.id;
+
+            const check = document.createElement('button');
+            check.className = 'todo-check';
+            check.innerHTML = task.done ? '✓' : '';
+            check.title = '标记完成/未完成';
+            check.addEventListener('click', () => toggleDone(task.id));
+
+            const text = document.createElement('span');
+            text.className = 'todo-text';
+            text.textContent = task.text;
+
+            const del = document.createElement('button');
+            del.className = 'todo-del';
+            del.innerHTML = '✕';
+            del.title = '删除任务';
+            del.addEventListener('click', () => remove(task.id, li));
+
+            li.append(check, text, del);
+            listEl.appendChild(li);
+        });
+        updateStats();
+    }
+
+    function add() {
+        const text = input.value.trim();
+        if (!text) { toast('⚠️ 请先输入任务内容'); input.focus(); return; }
+        tasks.push({
+            id: Date.now() + '' + Math.floor(Math.random() * 1000),
+            text,
+            done: false,
+            priority: prioritySelect.value
+        });
+        save();
+        input.value = '';
+        render();
+        input.focus();
+    }
+
+    function toggleDone(id) {
+        const t = tasks.find(t => t.id === id);
+        if (t) { t.done = !t.done; save(); render(); }
+    }
+
+    // 带淡出动画的删除
+    function remove(id, li) {
+        li.classList.add('removing');
+        setTimeout(() => {
+            tasks = tasks.filter(t => t.id !== id);
+            save();
+            render();
+        }, 280);
+    }
+
+    // 事件绑定
+    addBtn.addEventListener('click', add);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+
+    render();
+    return { focus: () => input.focus(), getTasks: () => tasks };
+})();
+
+/* ============================================================
+   习惯追踪器模块（最近 7 天）
+   ============================================================ */
+const Habit = (() => {
+    const daysEl = document.getElementById('habitDays');
+    const streakEl = document.getElementById('streakCount');
+    const rateText = document.getElementById('rateText');
+    const rateFill = document.getElementById('rateFill');
+    const DOW = ['日', '一', '二', '三', '四', '五', '六'];
+
+    // 存储结构：{ 'YYYY-MM-DD': true }
+    let records = Store.get('pd_habits', {});
+
+    function save() { Store.set('pd_habits', records); }
+
+    // 计算从今天往前的连续打卡天数
+    function calcStreak() {
+        let streak = 0;
+        const d = new Date();
+        // 若今天未打卡，从昨天开始算（今天还有机会）
+        if (!records[dateKey(d)]) d.setDate(d.getDate() - 1);
+        while (records[dateKey(d)]) {
+            streak++;
+            d.setDate(d.getDate() - 1);
+        }
+        return streak;
+    }
+
+    function render() {
+        daysEl.innerHTML = '';
+        const today = new Date();
+        let checkedIn7 = 0;
+
+        // 渲染最近 7 天（从 6 天前到今天）
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(today.getDate() - i);
+            const key = dateKey(d);
+            const checked = !!records[key];
+            if (checked) checkedIn7++;
+
+            const wrap = document.createElement('div');
+            wrap.className = 'habit-day';
+
+            const dow = document.createElement('span');
+            dow.className = 'dow';
+            dow.textContent = DOW[d.getDay()];
+
+            const cell = document.createElement('button');
+            cell.className = 'habit-cell' + (checked ? ' checked' : '') + (i === 0 ? ' today' : '');
+            cell.innerHTML = checked ? '✓' : '';
+            cell.title = key + (i === 0 ? '（今天）' : '');
+            cell.addEventListener('click', () => toggle(key));
+
+            wrap.append(dow, cell);
+            daysEl.appendChild(wrap);
+        }
+
+        streakEl.textContent = calcStreak();
+        const rate = Math.round((checkedIn7 / 7) * 100);
+        rateText.textContent = rate + '%';
+        rateFill.style.width = rate + '%';
+    }
+
+    function toggle(key) {
+        if (records[key]) delete records[key];
+        else { records[key] = true; toast('🔥 打卡成功！'); }
+        save();
+        render();
+    }
+
+    render();
+    return {};
+})();
+
+/* ============================================================
+   励志名言模块
+   ============================================================ */
+const Quotes = (() => {
+    const quotes = [
+        { t: '不要等待机会，而要创造机会。', a: '佚名' },
+        { t: '今天的努力，是幸运的伏笔。', a: '佚名' },
+        { t: '行动是治愈恐惧的良药，而犹豫拖延将不断滋养恐惧。', a: '威廉·詹姆斯' },
+        { t: '千里之行，始于足下。', a: '老子' },
+        { t: 'done is better than perfect（完成胜于完美）。', a: '雪莉·桑德伯格' },
+        { t: '你今天的态度，决定你明天的高度。', a: '佚名' },
+        { t: '种一棵树最好的时间是十年前，其次是现在。', a: '谚语' },
+        { t: '成功不是终点，失败也并非末日，重要的是继续前进的勇气。', a: '丘吉尔' },
+        { t: '专注当下，把每一件小事做到极致。', a: '佚名' },
+        { t: '自律给我自由。', a: '佚名' },
+        { t: '人生没有白走的路，每一步都算数。', a: '佚名' },
+        { t: '与其抱怨黑暗，不如点亮蜡烛。', a: '谚语' },
+        { t: '伟大的工作不是靠力量，而是靠坚持完成的。', a: '约翰逊' }
+    ];
+    const textEl = document.getElementById('quoteText');
+    const authorEl = document.getElementById('quoteAuthor');
+    const btn = document.getElementById('newQuoteBtn');
+    let lastIndex = -1;
+
+    function show() {
+        let idx;
+        // 避免连续显示同一条
+        do { idx = Math.floor(Math.random() * quotes.length); }
+        while (idx === lastIndex && quotes.length > 1);
+        lastIndex = idx;
+
+        textEl.classList.add('quote-fade');
+        authorEl.classList.add('quote-fade');
+        setTimeout(() => {
+            textEl.textContent = '“' + quotes[idx].t + '”';
+            authorEl.textContent = '— ' + quotes[idx].a;
+            textEl.classList.remove('quote-fade');
+            authorEl.classList.remove('quote-fade');
+        }, 250);
+    }
+
+    btn.addEventListener('click', show);
+    show();
+    return {};
+})();
+
+/* ============================================================
+   数据导出为 JSON
+   ============================================================ */
+document.getElementById('exportBtn').addEventListener('click', () => {
+    const data = {
+        exportedAt: new Date().toISOString(),
+        todos: Store.get('pd_todos', []),
+        habits: Store.get('pd_habits', {}),
+        pomodoroSettings: Store.get('pd_pomo_settings', {}),
+        pomodoroCount: Store.get('pd_pomo_count', {})
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'productivity-backup-' + dateKey(new Date()) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('💾 数据已导出');
+});
+
+/* ============================================================
+   全局键盘快捷键
+   N=新建任务  Space=开始/暂停番茄钟  T=切换主题
+   ============================================================ */
+document.addEventListener('keydown', e => {
+    // 在输入框中输入时不触发快捷键
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    if (e.code === 'Space') { e.preventDefault(); Pomodoro.toggle(); }
+    else if (e.key.toLowerCase() === 'n') { e.preventDefault(); Todo.focus(); }
+    else if (e.key.toLowerCase() === 't') { e.preventDefault(); themeBtn.click(); }
+});
+</script>
+</body>
+</html>
